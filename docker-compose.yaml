@@ -10,5 +10,6 @@ services:
       drct:
         ipv4_address: 10.10.255.12
 networks:
-  name: drct_net
-  external: true
+  drct:
+    name: drct_net
+    external: true
