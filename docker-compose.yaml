@@ -6,3 +6,9 @@ services:
       - "21001:3000"
     env_file:
       - stack.env
+    networks:
+      drct:
+        ipv4_address: 10.10.255.12
+networks:
+  name: drct_net
+  external: true
