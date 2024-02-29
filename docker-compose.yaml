@@ -9,7 +9,15 @@ services:
     networks:
       drct:
         ipv4_address: 10.10.255.12
+    volumes:
+      - config:/app/config
+      - account:/app/account
+      - logs:/app/logs
 networks:
   drct:
     name: drct_net
     external: true
+volumes:
+  config:
+  account:
+  logs:
