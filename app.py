@@ -1,8 +1,24 @@
+"""
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <https://www.gnu.org/licenses>.
+
+"""
 import argparse
-import os
 import sys
 
 from config import PORT, HOST
+from utils.entrypoints import optimizeEntrypoints
 from utils.logger import createLogger
 
 
@@ -67,15 +83,11 @@ def main():
         main(logger=logger)
 
     elif args.command == "optimize":
-        # Fix ./scripts/get_entrypoint.sh if it has CRLF
-        file = open('./scripts/get_entrypoints.sh', 'r')
-        data = file.read().replace('\r\n', '\n')
-        file.close()
-        file = open('./scripts/get_entrypoints.sh', 'w')
-        file.write(data)
-        file.close()
-        # Run ./scripts/get_entrypoint.sh
-        os.system("bash ./scripts/get_entrypoints.sh")
+        # Windows is not supported for this command
+        if sys.platform == 'win32':
+            print('This command is not supported on Windows.')
+            return
+        optimizeEntrypoints()
 
 
 if __name__ == "__main__":

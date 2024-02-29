@@ -1,3 +1,19 @@
+"""
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <https://www.gnu.org/licenses>.
+
+"""
 import maxminddb
 
 
@@ -15,15 +31,20 @@ def countryCodeToEmoji(country_code):
 
 
 class GeoIP:
-    def __init__(self, db_path):
+    def __init__(self, db_path: str) -> None:
         self.db = maxminddb.open_database(db_path)
 
-    def lookup(self, ip):
+    def lookup(self, ip: str) -> str or None:
         """
         Lookup ip to get country code
         :param ip:
         :return:
         """
+
+        # Remove brackets from IPv6 addresses
+        if ip.startswith('['):
+            ip = ip.replace('[', '').replace(']', '')
+
         result = self.db.get(ip)
         try:
             if result:
@@ -37,7 +58,7 @@ class GeoIP:
         except Exception as e:
             return None
 
-    def lookup_emoji(self, ip):
+    def lookup_emoji(self, ip: str) -> str or None:
         """
         Lookup ip to get country emoji
         :param ip:
@@ -46,7 +67,7 @@ class GeoIP:
         result = self.lookup(ip)
         return countryCodeToEmoji(result)
 
-    def close(self):
+    def close(self) -> None:
         """
         Close database
         :return:

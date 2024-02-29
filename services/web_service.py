@@ -1,24 +1,47 @@
+"""
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <https://www.gnu.org/licenses>.
+
+"""
 import time
 from functools import wraps
 
-from flask import Flask, request, make_response, current_app, render_template
-from config import SECRET_KEY, REQUEST_RATE_LIMIT
-from services.subscription import generateClashSubFile, generateWireguardSubFile, generateSurgeSubFile
-from services.common import *
 from faker import Faker
+from flask import Flask, request, make_response, current_app, render_template
+
+from config import SECRET_KEY, REQUEST_RATE_LIMIT, SHARE_SUBSCRIPTION
+from services.account import resetAccountKey, doUpdateLicenseKey
+from services.common import *
+from services.subscription import generateClashSubFile, generateWireguardSubFile, generateSurgeSubFile, \
+    generateShadowRocketSubFile, generateSingBoxSubFile
 
 RATE_LIMIT_MAP = {}
 
 
-def authorized():
+def authorized(can_skip: bool = False):
     """
     All requests must be authorized
+    :param can_skip: If true, the request can skip authorization when SHARE_SUBSCRIPTION is true
     :return:
     """
 
     def decorator(f):
         @wraps(f)
         def decoratedFunction(*args, **kwargs):
+            # Skip authorization if the route can be shared
+            if SHARE_SUBSCRIPTION and can_skip:
+                return f(*args, **kwargs)
 
             key = request.headers.get('X-Api-Key') or request.args.get('key')
 
@@ -91,11 +114,15 @@ def attachEndpoints(app: Flask):
         if "clash" in user_agent:  # Clash
             return httpSubscription("clash")
         elif "shadowrocket" in user_agent:  # Shadowrocket
-            return httpSubscription("clash")
+            return httpSubscription("shadowrocket")
+        elif "v2ray" in user_agent:  # V2Ray
+            return httpSubscription("shadowrocket")
         elif "quantumult" in user_agent:  # Quantumult
             return httpSubscription("clash")
         elif "surge" in user_agent:  # Surge
             return httpSubscription("surge")
+        elif "sing-box" in user_agent:  # Sing Box
+            return httpSubscription("sing-box")
 
         # By default, return Clash
         return httpSubscription("clash")
@@ -111,51 +138,127 @@ def attachEndpoints(app: Flask):
             'data': account.__dict__
         }
 
-    @app.route('/api/<string:sub_type>', methods=['GET'])
+    @app.route('/api/account/reset_key', methods=['POST'])
     @rateLimit()
     @authorized()
+    def httpAccountResetKey():
+        try:
+            resetAccountKey(logger)
+        except Exception as e:
+            return {
+                'code': 500,
+                'message': str(e)
+            }, 500
+        return {
+            'code': 200,
+            'message': 'ok'
+        }
+
+    @app.route('/api/account/update_license', methods=['POST'])
+    @rateLimit()
+    @authorized()
+    def httpAccountUpdateLicense():
+        license_key = request.json.get('license_key')
+        if not license_key:
+            return {
+                'code': 400,
+                'message': 'License key is required'
+            }, 400
+        try:
+            doUpdateLicenseKey(license_key, logger)
+        except Exception as e:
+            return {
+                'code': 500,
+                'message': str(e)
+            }, 500
+        return {
+            'code': 200,
+            'message': 'ok'
+        }
+
+    @app.route('/api/<string:sub_type>', methods=['GET'])
+    @rateLimit()
+    @authorized(can_skip=True)
     def httpSubscription(sub_type: str):
+        user_agent = request.headers.get('User-Agent', 'unknown').lower()
         account = getCurrentAccount(logger)
         best = request.args.get('best', 'false').lower() == "true" or False
         random_name = request.args.get('randomName', 'false').lower() == "true" or False
+        proxy_format = request.args.get('proxyFormat', 'full').lower()
+        ipv6 = request.args.get('ipv6', 'false').lower() == "true" or False
+
+        headers = {
+            'Content-Type': 'application/x-yaml; charset=utf-8',
+            "Subscription-Userinfo": f"upload=0; download={account.usage}; total={account.quota}; "
+                                     f"expire=253388144714"
+        }
 
         if sub_type == "clash":  # Clash
-            fileData = generateClashSubFile(account, logger, best=best, only_proxies=False, random_name=random_name)
-            headers = {
-                'Content-Type': 'application/x-yaml; charset=utf-8',
-                'Content-Disposition': f'attachment; filename=Clash-{fake.color_name()}.yaml',
-                "Subscription-Userinfo": f"upload=0; download={account.usage}; total={account.quota}; "
-                                         f"expire=253388144714"
-            }
+
+            # It seems that `dns` will cause problem in android.
+            # So it is necessary to check if the user agent contains "android".
+            # https://github.com/vvbbnn00/WARP-Clash-API/issues/74
+            is_android = "android" in user_agent
+
+            file_data = generateClashSubFile(account,
+                                             logger,
+                                             best=best,
+                                             proxy_format=proxy_format,
+                                             random_name=random_name,
+                                             is_android=is_android,
+                                             ipv6=ipv6)
+            file_name = f'Clash-{fake.color_name()}.yaml'
+
         elif sub_type == "wireguard":  # Wireguard
-            fileData = generateWireguardSubFile(account, logger, best=best)
-            headers = {
-                'Content-Type': 'application/x-conf; charset=utf-8',
-                'Content-Disposition': f'attachment; filename={fake.lexify("????????????").lower()}.conf'
-            }
+            file_data = generateWireguardSubFile(account,
+                                                 logger,
+                                                 best=best,
+                                                 ipv6=ipv6)
+            file_name = f'WireGuard-{fake.lexify("????????????").lower()}.conf'
+
         elif sub_type == "surge":  # Surge
-            fileData = generateSurgeSubFile(account, logger, best=best, random_name=random_name)
-            headers = {
-                'Content-Type': 'text/plain; charset=utf-8',
-                'Content-Disposition': 'attachment; filename=surge.conf',
-                "Subscription-Userinfo": f"upload=0; download={account.usage}; total={account.quota}; "
-                                         f"expire=253388144714"
-            }
+            file_data = generateSurgeSubFile(account,
+                                             logger,
+                                             best=best,
+                                             random_name=random_name,
+                                             proxy_format=proxy_format,
+                                             ipv6=ipv6)
+            file_name = f'Surge-{fake.color_name()}.conf'
+
+        elif sub_type == 'shadowrocket':  # Shadowrocket
+            file_data = generateShadowRocketSubFile(account,
+                                                    logger,
+                                                    best=best,
+                                                    random_name=random_name,
+                                                    ipv6=ipv6)
+            file_name = f'Shadowrocket-{fake.color_name()}.conf'
+
+        elif sub_type == 'sing-box':  # Sing Box
+            file_data = generateSingBoxSubFile(account,
+                                               logger,
+                                               best=best,
+                                               random_name=random_name,
+                                               ipv6=ipv6)
+            file_name = f'SingBox-{fake.color_name()}.json'
+
+        # This might be deprecated in the future.
         elif sub_type == "only_proxies":  # Only proxies
-            fileData = generateClashSubFile(account, logger, best=best, only_proxies=True, random_name=random_name)
-            headers = {
-                'Content-Type': 'application/x-yaml; charset=utf-8',
-                'Content-Disposition': f'attachment; filename=Clash-{fake.color_name()}.yaml',
-                "Subscription-Userinfo": f"upload=0; download={account.usage}; total={account.quota}; "
-                                         f"expire=253388144714"
-            }
+            file_data = generateClashSubFile(account,
+                                             logger,
+                                             best=best,
+                                             proxy_format='with_groups',
+                                             random_name=random_name,
+                                             ipv6=ipv6)
+            file_name = f'Clash-{fake.color_name()}.yaml'
+
         else:
             return {
                 'code': 400,
                 'message': 'Unsupported sub type.'
             }, 400
 
-        response = make_response(fileData)
+        headers['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        response = make_response(file_data)
         response.headers = headers
 
         return response
