@@ -1,5 +1,9 @@
 # WARP Clash API
 
+![GitHub License](https://img.shields.io/github/license/vvbbnn00/WARP-Clash-API)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/67ca8d105fb947eca6204230ba3ac09b)](https://app.codacy.com/gh/vvbbnn00/WARP-Clash-API/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+![GitHub Repo stars](https://img.shields.io/github/stars/vvbbnn00/WARP-Clash-API?style=flat)
+
 中文 | [English](./README_en.md)
 
 > **Warning**
@@ -8,9 +12,11 @@
 
 ## 🤔 这是什么？
 
-该项目可以让你通过订阅的方式使用`WARP+`，支持`Clash`、`Shadowrocket`等客户端。项目内置了刷取`WARP+`
-流量的功能，可以让你的`WARP+`流量不再受限制（每`18`秒可获得`1GB`流量），同时，配备了`IP`选优功能。支持`Docker compose`
-一键部署，无需额外操作，即可享受你自己的`WARP+`私有高速节点！
+该项目可以让你通过订阅的方式使用`WARP+`，支持`Clash`、`Shadowrocket`等客户端。项目内置了
+刷取`WARP+`流量的功能，可以让你的`WARP+`流量不再受限制（每`18`秒可获得`1GB`流量），同时，
+配备了`IP`选优功能。支持`Docker compose`
+一键部署，无需额外操作，即可享受你自己的`WARP+`私
+有高速节点！
 
 ## 💡 特色功能
 
@@ -25,8 +31,10 @@
 
 ### 1. 安装`Docker`和`Docker compose`
 
-- `Docker`安装教程：[https://docs.docker.com/engine/install/](https://docs.docker.com/engine/install/)
-- `Docker compose`安装教程：[https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
+- `Docker`
+  安装教程：[https://docs.docker.com/engine/install/](https://docs.docker.com/engine/install/)
+- `Docker compose`
+  安装教程：[https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
 
 ### 2. 下载项目
 
@@ -36,7 +44,8 @@ git clone https://github.com/vvbbnn00/WARP-Clash-API.git
 
 ### 3. [可选] 配置`SECRET_KEY`
 
-若您需要在公网上部署该项目，建议您配置`SECRET_KEY`与`PUBLIC_URL`。在项目目录下创建`.env.local`文件，写入如下内容：
+若您需要在公网上部署该项目，建议您配置`SECRET_KEY`与`PUBLIC_URL`。在项目目录下创建
+`.env.local`文件，写入如下内容：
 
 ```bash
 SECRET_KEY=your_secret_key
@@ -58,7 +67,9 @@ docker-compose up -d
 
 ## 🌏 手动IP选优
 
-项目本身包含了一个选优过的`IP`列表，但是由于`WARP`的`IP`是动态的，所以可能会出现`IP`不可用的情况。若您需要手动选优，可以遵循以下步骤：
+项目本身包含了一个选优过的`IP`列表，但是由于`WARP`的`IP`
+是动态的，所以可能会出现`IP`不可用的
+情况。若您需要手动选优，可以遵循以下步骤：
 
 若您通过`docker-compose`部署，可以在项目目录下通过以下命令手动执行`IP`选优：
 
@@ -74,7 +85,8 @@ python3 app.py optimize
 
 ## 🔧 环境变量
 
-没错，您可以通过环境变量来配置该项目，在配置时，只需新建一个`.env.local`文件，写入您需要的环境变量即可。
+没错，您可以通过环境变量来配置该项目，在配置时，只需新建一个`.env.local`文件，写入您需要的环境
+变量即可。
 
 以下是可用的环境变量：
 
@@ -94,7 +106,9 @@ python3 app.py optimize
 
 ### 📝 配置示例
 
-例如，您设置`SECRET_KEY`为`123456`，并打算将订阅分享给社区，那么您的`.env.local`文件应该如下：
+例如，您设置`SECRET_KEY`为`123456`，并打算将订阅分享给社区，那么您的`.env.local`
+文件应该
+如下：
 
 ```env
 SECRET_KEY=123456
@@ -103,10 +117,10 @@ SHARE_SUBSCRIPTION=True
 
 ## 🧰 进阶操作
 
-**请注意，如果您设置了`SECRET_KEY`，需要在URL的末尾添加`secret_key`参数**，例如：
+**请注意，如果您设置了`SECRET_KEY`，需要在URL的末尾添加`key`参数**，例如：
 
-```
-http://your_IP:21001/some/api/actions?secret_key=your_secret_key
+```text
+http://your_IP:21001/some/api/actions?key=your_secret_key
 ```
 
 ### 重置账户的`PublicKey`和`PrivateKey`
@@ -127,7 +141,39 @@ curl -X POST http://host:port/api/account/reset_key
 curl -X POST http://host:port/api/account/update_license -H "Content-Type: application/json" -d "{\"license_key\": \"your_license_key\"}"
 ```
 
-请注意，当您设置了`LicenseKey`后，其`PublicKey`和`PrivateKey`将会被重置，需要重新获取订阅内容。
+请注意，当您设置了`LicenseKey`后，其`PublicKey`和`PrivateKey`将会被重置，需要重新获取订阅
+内容。
+
+### 使用 IPv6 优选
+
+从原理上来看，本服务通过读取`config/result_v6.csv`文件获取`IPv6`地址，因此您可以在支持
+`IPv6`的服务器上运行`IP`选优功能来获得`IPv6`地址。获取到的接入地址列表只需写入
+`config/result_v6.csv`文件中，相比在`Docker`容器中运行`IP`选优功能，此方法更为简便。
+
+如果您需要在`Docker`容器中运行`IP`选优功能，可以使用`docker-compose_ipv6.yaml`
+文件来让`Docker`镜像支持`IPv6`。在运行前，请确保您的服务器支持`IPv6`，并在`Docker`服务的
+`/etc/docker/daemon.json`中添加以下内容，并重启`Docker`服务：
+
+```json
+{
+  "experimental": true,
+  "ip6tables": true,
+  "ipv6": true,
+  "fixed-cidr-v6": "2001:db8:1::/64"
+}
+```
+
+若您在先前已经运行过`Docker`服务，在运行之前，请先停止之前的服务：
+
+```bash
+docker-compose down
+```
+
+然后，您可以通过以下命令来运行`Docker`服务：
+
+```bash
+docker-compose -f docker-compose_ipv6.yaml up -d
+```
 
 ## 🗂️ 引用项目
 
@@ -138,4 +184,3 @@ curl -X POST http://host:port/api/account/update_license -H "Content-Type: appli
 - [wgcf](https://github.com/ViRb3/wgcf)
 - [proxy_pool](https://github.com/jhao104/proxy_pool)
 - [geolite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data)
-

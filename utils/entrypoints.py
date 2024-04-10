@@ -17,10 +17,11 @@ along with this program; if not, see <https://www.gnu.org/licenses>.
 import copy
 import csv
 import logging
+import os
 
 from flask import current_app
 
-from config import *
+from config import DELAY_THRESHOLD, LOSS_THRESHOLD
 from models import Entrypoint
 
 ENTRYPOINT_SCRIPT_PATH = './scripts/get_entrypoints.sh'
@@ -92,7 +93,7 @@ def reloadEntrypoints(ipv6=False):
             ip, port = row[0].split(':') if not ipv6 else (row[0].split("]:"))
             ip = ip.replace('[', '') if ipv6 else ip
             loss = float(row[1].replace('%', ''))
-            delay = int(row[2].replace('ms', ''))
+            delay = float(row[2].replace('ms', ''))
 
             if loss > LOSS_THRESHOLD or delay > DELAY_THRESHOLD:
                 continue
